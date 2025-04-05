@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.35906.104 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CakeBuild", "CakeBuild\CakeBuild.csproj", "{D2CBA62E-476E-419F-8887-29AA9A4BEDB8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CavesNCaverns", "CavesNCaverns\CavesNCaverns.csproj", "{37DA34D7-2535-4129-995D-72F745E4447D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D2CBA62E-476E-419F-8887-29AA9A4BEDB8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2CBA62E-476E-419F-8887-29AA9A4BEDB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2CBA62E-476E-419F-8887-29AA9A4BEDB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2CBA62E-476E-419F-8887-29AA9A4BEDB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37DA34D7-2535-4129-995D-72F745E4447D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37DA34D7-2535-4129-995D-72F745E4447D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37DA34D7-2535-4129-995D-72F745E4447D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37DA34D7-2535-4129-995D-72F745E4447D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {93993E1E-DC75-4D6C-966D-6A82F0FF1B00}
+	EndGlobalSection
+EndGlobal
