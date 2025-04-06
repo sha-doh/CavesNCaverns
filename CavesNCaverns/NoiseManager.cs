@@ -18,6 +18,7 @@ namespace CavesAndCaverns.Managers
         private SimplexNoise veinGapNoise;
         private SimplexNoise spaghetti2DNoise;
         private SimplexNoise pillarNoise;
+        private bool isInitialized = false;
 
         // Scaling factors based on Terralith's xz_scale and y_scale
         private readonly double cheeseFx = 1.0;   // 1 / xz_scale = 1 / 1
@@ -36,7 +37,8 @@ namespace CavesAndCaverns.Managers
         private readonly double noodleFy = 1.0;     // 1 / y_scale = 1 / 1
         private readonly double noodleFz = 1.0;
 
-        // Parameterless constructor required by Vintage Story
+        public bool IsInitialized => isInitialized;
+
         public NoiseManager()
         {
             // Initialize fields to null or default values
@@ -53,20 +55,36 @@ namespace CavesAndCaverns.Managers
             pillarNoise = null;
         }
 
-        public override void StartServerSide(ICoreServerAPI sapi)
+        public override bool ShouldLoad(EnumAppSide side)
         {
-            this.sapi = sapi;
+            return side == EnumAppSide.Server; // NoiseManager is server-side only
+        }
+
+        public override void StartServerSide(ICoreServerAPI api)
+        {
+            this.sapi = api;
+            if (sapi == null)
+            {
+                throw new InvalidOperationException("ICoreServerAPI is null in NoiseManager.StartServerSide.");
+            }
+            Init(); // Initialize immediately after sapi is set
+        }
+
+        public void Init()
+        {
+            if (isInitialized) return;
+            if (sapi == null)
+            {
+                throw new InvalidOperationException("ICoreServerAPI not set in NoiseManager before calling Init.");
+            }
             LoadAllNoises();
+            isInitialized = true;
+            sapi.Logger.Debug("[CavesAndCaverns] NoiseManager initialized.");
         }
 
         private void LoadAllNoises()
         {
-            if (sapi == null)
-            {
-                throw new InvalidOperationException("ICoreServerAPI not initialized in NoiseManager.");
-            }
-
-            var config = CavesAndCavernsCore.ConfigManager.Config;
+            var config = CavesAndCaverns.CavesAndCavernsCore.ConfigManager.Config;
             long seed = config.Seed != 0 ? config.Seed : sapi.World.Seed;
 
             // Base frequency for scaling
@@ -125,54 +143,73 @@ namespace CavesAndCaverns.Managers
             denseCaveNoise = new SimplexNoise(defaultAmplitudes, defaultFrequencies, seed + 5);
         }
 
-        // Getter methods with coordinate scaling
         public double GetSurfaceRiverNoise(int x, int z)
         {
+            if (surfaceRiverNoise == null)
+                throw new InvalidOperationException("SurfaceRiverNoise not initialized.");
             return surfaceRiverNoise.Noise(x * 1.0, z * 1.0); // Placeholder scaling
         }
 
         public double GetUndergroundRiverNoise(int x, int z)
         {
+            if (undergroundRiverNoise == null)
+                throw new InvalidOperationException("UndergroundRiverNoise not initialized.");
             return undergroundRiverNoise.Noise(x * 1.0, z * 1.0); // Placeholder scaling
         }
 
         public double GetLavaRiverNoise(int x, int y, int z)
         {
+            if (lavaRiverNoise == null)
+                throw new InvalidOperationException("LavaRiverNoise not initialized.");
             return lavaRiverNoise.Noise(x * 1.0, y * 1.0, z * 1.0); // Placeholder scaling
         }
 
         public double GetCanyonNoise(int x, int y, int z)
         {
+            if (canyonNoise == null)
+                throw new InvalidOperationException("CanyonNoise not initialized.");
             return canyonNoise.Noise(x * caveLayerFx, y * caveLayerFy, z * caveLayerFz);
         }
 
         public double GetDenseCaveNoise(int x, int y, int z)
         {
+            if (denseCaveNoise == null)
+                throw new InvalidOperationException("DenseCaveNoise not initialized.");
             return denseCaveNoise.Noise(x * caveLayerFx, y * caveLayerFy, z * caveLayerFz);
         }
 
         public double GetCheeseNoise(int x, int y, int z)
         {
+            if (cheeseNoise == null)
+                throw new InvalidOperationException("CheeseNoise not initialized.");
             return cheeseNoise.Noise(x * cheeseFx, y * cheeseFy, z * cheeseFz);
         }
 
         public double GetThermalLakeNoise(int x, int y, int z)
         {
+            if (thermalLakeNoise == null)
+                throw new InvalidOperationException("ThermalLakeNoise not initialized.");
             return thermalLakeNoise.Noise(x * caveLayerFx, y * caveLayerFy, z * caveLayerFz);
         }
 
         public double GetVeinGapNoise(int x, int y, int z)
         {
+            if (veinGapNoise == null)
+                throw new InvalidOperationException("VeinGapNoise not initialized.");
             return veinGapNoise.Noise(x * noodleFx, y * noodleFy, z * noodleFz);
         }
 
         public double GetSpaghetti2DNoise(int x, int y, int z)
         {
+            if (spaghetti2DNoise == null)
+                throw new InvalidOperationException("Spaghetti2DNoise not initialized.");
             return spaghetti2DNoise.Noise(x * spaghettiFx, y * spaghettiFy, z * spaghettiFz);
         }
 
         public double GetPillarNoise(int x, int y, int z)
         {
+            if (pillarNoise == null)
+                throw new InvalidOperationException("PillarNoise not initialized.");
             return pillarNoise.Noise(x * caveLayerFx, y * caveLayerFy, z * caveLayerFz);
         }
     }

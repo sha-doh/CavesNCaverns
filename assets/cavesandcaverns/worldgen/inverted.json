@@ -1,0 +1,40 @@
+{
+  "code": "inverted",
+  "enabled": true,
+  "worldGenPresets": {
+    "terrainGenerator": "flat", // Use "flat" to minimize terrain generation
+    "heightmap": "flat", // Ensures a flat heightmap at Y=0
+    "climateMapScale": 0, // Disable climate influence
+    "geoProvinceMapScale": 0, // Disable geological provinces
+    "rockStrata": [], // No rock strata generation
+    "worldGenBlockLayers": [], // No block layers (no terrain)
+    "worldGenStructures": [], // No structures
+    "worldGenCaves": false // Disable default caves (your mod will handle caves)
+  },
+  "worldGenSettings": {
+    "seaLevel": 0, // No water
+    "worldHeight": 256, // Standard height
+    "worldWidth": 1024000, // Standard width
+    "worldLength": 1024000 // Standard length
+  },
+  "landforms": [
+    {
+      "code": "invertedvoid",
+      "comment": "A completely flat void landform",
+      "hexcolor": "#000000",
+      "weight": 100,
+      "terrainOctaves": [
+        0, 0, 0, 0, 0, 0, 0, 0, 0
+      ],
+      "terrainOctaveThresholds": [
+        0, 0, 0, 0, 0, 0, 0, 0, 0
+      ],
+      "terrainYKeyPositions": [
+        0.0, 0.001
+      ],
+      "terrainYKeyThresholds": [
+        0.0, 0.0
+      ]
+    }
+  ]
+}

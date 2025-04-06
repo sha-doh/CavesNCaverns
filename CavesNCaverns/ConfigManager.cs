@@ -111,7 +111,7 @@ namespace CavesAndCaverns.Config
             }
         }
 
-        public CavesConfig GetDefaultConfig() // Changed from private to public
+        public CavesConfig GetDefaultConfig()
         {
             return new CavesConfig
             {
@@ -152,7 +152,8 @@ namespace CavesAndCaverns.Config
                 GlowWormLightLevel = 7,
                 BedrockMinThickness = 1,
                 BedrockMaxThickness = 3,
-                Seed = 0
+                Seed = 0,
+                UseInvertedWorld = false // Added default value
             };
         }
     }
@@ -199,5 +200,8 @@ namespace CavesAndCaverns.Config
         public int BedrockMinThickness { get; set; } = 1;
         public int BedrockMaxThickness { get; set; } = 3;
         public int Seed { get; set; } = 0;
+
+        // Added UseInvertedWorld property
+        public bool UseInvertedWorld { get; set; } = false;
     }
 }

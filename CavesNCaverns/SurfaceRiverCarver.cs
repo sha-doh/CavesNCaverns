@@ -26,33 +26,45 @@ namespace CavesAndCaverns.Carvers
             int maxWidth = config.SurfaceRiverWidthMax;
             float wetMultiplier = biomeTag == "wet" ? config.WetBiomeRiverChanceMultiplier : 1.0f;
 
-            for (int x = 0; x < chunkSize; x++)
+            // Surface rivers should only carve around surface level (Y=100-150 globally)
+            int surfaceYMin = 100;
+            int surfaceYMax = 150;
+            if (origin.Y < surfaceYMin || origin.Y > surfaceYMax)
             {
-                for (int z = 0; z < chunkSize; z++)
+                sapi.Logger.Debug("[CavesAndCaverns] Skipping surfaceriver carver at Y={0} (outside range {1}-{2})", origin.Y, surfaceYMin, surfaceYMax);
+                return map;
+            }
+
+            // Check if a river should spawn in this chunk
+            double noiseValue = noiseManager.GetSurfaceRiverNoise(origin.X, origin.Z);
+            if (noiseValue * wetMultiplier > config.SurfaceRiverProbability)
+            {
+                // River parameters
+                int riverWidth = GameMath.Clamp((int)(minWidth + noiseValue * (maxWidth - minWidth)), minWidth, maxWidth); // 3-6 blocks wide
+                int riverDepth = 2; // 2 blocks deep
+                int riverY = chunkSize - 1; // Start at the top of the chunk section
+
+                // Create a winding river path across the chunk
+                for (int x = 0; x < chunkSize; x++)
                 {
-                    double noiseValue = noiseManager.GetSurfaceRiverNoise(origin.X + x, origin.Z + z);
-                    if (noiseValue * wetMultiplier > 0.1) // Lowered from 0.5 to 0.1
+                    // Use noise to determine the Z position of the river's center
+                    double zNoise = noiseManager.GetSurfaceRiverNoise(origin.X + x, origin.Z);
+                    int centerZ = (int)(chunkSize / 2 + zNoise * (chunkSize / 4)); // Center of the river, with some variation
+                    centerZ = GameMath.Clamp(centerZ, riverWidth / 2, chunkSize - riverWidth / 2 - 1);
+
+                    // Carve a river of specified width and depth
+                    for (int z = centerZ - riverWidth / 2; z <= centerZ + riverWidth / 2; z++)
                     {
-                        int width = sapi.World.Rand.Next(minWidth, maxWidth + 1);
-                        for (int dx = -width; dx <= width; dx++)
+                        for (int y = riverY; y >= riverY - riverDepth && y >= 0; y--)
                         {
-                            for (int dz = -width; dz <= width; dz++)
-                            {
-                                if (dx * dx + dz * dz <= width * width)
-                                {
-                                    int newX = x + dx;
-                                    int newZ = z + dz;
-                                    if (newX >= 0 && newX < chunkSize && newZ >= 0 && newZ < chunkSize)
-                                    {
-                                        for (int y = 0; y < chunkSize; y++)
-                                            map[newX, y, newZ] = true;
-                                    }
-                                }
-                            }
+                            map[x, y, z] = true;
                         }
                     }
                 }
+
+                sapi.Logger.Notification("[CavesAndCaverns] Carver surfaceriver generated river at X:{0}, Z:{1}, Y:{2} with width {3}", origin.X, origin.Z, origin.Y, riverWidth);
             }
+
             return map;
         }
     }

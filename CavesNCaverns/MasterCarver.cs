@@ -48,9 +48,10 @@ namespace CavesAndCaverns.Carvers
                 if (carver.Key == "surfaceriver" && !config.EnableSurfaceRivers) continue;
 
                 float probability = config.SurfaceRiverProbability;
-                if (sapi.World.Rand.NextDouble() > probability)
+                double noiseValue = CavesAndCavernsCore.NoiseManager.GetSurfaceRiverNoise(origin.X, origin.Z);
+                if (sapi.World.Rand.NextDouble() > probability || noiseValue < 0.5) // Threshold for noise
                 {
-                    sapi.Logger.Debug("[CavesAndCaverns] Skipped carver {0} due to probability {1}", carver.Key, probability);
+                    sapi.Logger.Debug("[CavesAndCaverns] Skipped carver {0} due to probability {1} or noise {2}", carver.Key, probability, noiseValue);
                     continue;
                 }
 
@@ -74,45 +75,76 @@ namespace CavesAndCaverns.Carvers
             foreach (var carver in undergroundCarvers)
             {
                 bool shouldContinue = false;
+                float probability;
+                double noiseValue;
+
                 switch (carver.Key)
                 {
-                    case "spaghetti2d": if (!config.EnableSpaghetti2D) shouldContinue = true; break;
-                    case "canyon": if (!config.EnableCanyons) shouldContinue = true; break;
-                    case "densecave": if (!config.EnableDenseCaves) shouldContinue = true; break;
-                    case "megacave": if (!config.EnableCheeseCaves) shouldContinue = true; break;
-                    case "thermallake": if (!config.EnableThermalLakes) shouldContinue = true; break;
-                    case "undergroundriver": if (!config.EnableUndergroundRivers) shouldContinue = true; break;
-                    case "lavariver": if (!config.EnableLavaRivers) shouldContinue = true; break;
-                    case "veingap": if (!config.EnableVeinGaps) shouldContinue = true; break;
-                    case "pillar": if (!config.EnablePillars) shouldContinue = true; break;
+                    case "spaghetti2d":
+                        if (!config.EnableSpaghetti2D) shouldContinue = true;
+                        probability = config.SpaghettiProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetSpaghetti2DNoise(origin.X, origin.Y, origin.Z);
+                        break;
+                    case "canyon":
+                        if (!config.EnableCanyons) shouldContinue = true;
+                        probability = config.CanyonProbability;
+                        noiseValue = 0; // Canyons might not use noise yet
+                        break;
+                    case "densecave":
+                        if (!config.EnableDenseCaves) shouldContinue = true;
+                        probability = config.DenseCaveProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetDenseCaveNoise(origin.X, origin.Y, origin.Z);
+                        break;
+                    case "megacave":
+                        if (!config.EnableCheeseCaves) shouldContinue = true;
+                        probability = config.CheeseProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetCheeseNoise(origin.X, origin.Y, origin.Z);
+                        break;
+                    case "thermallake":
+                        if (!config.EnableThermalLakes) shouldContinue = true;
+                        probability = config.ThermalLakeProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetThermalLakeNoise(origin.X, origin.Y, origin.Z);
+                        break;
+                    case "undergroundriver":
+                        if (!config.EnableUndergroundRivers) shouldContinue = true;
+                        probability = config.UndergroundRiverProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetUndergroundRiverNoise(origin.X, origin.Z);
+                        break;
+                    case "lavariver":
+                        if (!config.EnableLavaRivers) shouldContinue = true;
+                        probability = config.LavaRiverProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetLavaRiverNoise(origin.X, origin.Y, origin.Z);
+                        break;
+                    case "veingap":
+                        if (!config.EnableVeinGaps) shouldContinue = true;
+                        probability = config.VeinGapProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetVeinGapNoise(origin.X, origin.Y, origin.Z);
+                        break;
+                    case "pillar":
+                        if (!config.EnablePillars) shouldContinue = true;
+                        probability = config.PillarProbability;
+                        noiseValue = CavesAndCavernsCore.NoiseManager.GetPillarNoise(origin.X, origin.Y, origin.Z);
+                        break;
+                    default:
+                        probability = 0f;
+                        noiseValue = 0;
+                        break;
                 }
+
                 if (shouldContinue)
                 {
                     sapi.Logger.Debug("[CavesAndCaverns] Skipped carver {0} due to disabled flag", carver.Key);
                     continue;
                 }
 
-                float probability = carver.Key switch
+                if (sapi.World.Rand.NextDouble() > probability || noiseValue < 0.5) // Noise threshold
                 {
-                    "spaghetti2d" => config.SpaghettiProbability,
-                    "canyon" => config.CanyonProbability,
-                    "densecave" => config.DenseCaveProbability,
-                    "megacave" => config.CheeseProbability,
-                    "thermallake" => config.ThermalLakeProbability,
-                    "undergroundriver" => config.UndergroundRiverProbability,
-                    "lavariver" => config.LavaRiverProbability,
-                    "veingap" => config.VeinGapProbability,
-                    "pillar" => config.PillarProbability,
-                    _ => 0f
-                };
-                if (sapi.World.Rand.NextDouble() > probability)
-                {
-                    sapi.Logger.Debug("[CavesAndCaverns] Skipped carver {0} due to probability {1}", carver.Key, probability);
+                    sapi.Logger.Debug("[CavesAndCaverns] Skipped carver {0} due to probability {1} or noise {2}", carver.Key, probability, noiseValue);
                     continue;
                 }
 
                 var carved = carver.Value.Generate(chunkSize, origin, biomeTag);
-                sapi.Logger.Notification("[CavesAndCaverns] Carver {0} generated {1} blocks at X:{2}, Z:{3}, Y:{4} with noise sample {5}", carver.Key, CountCarvedBlocks(carved), origin.X, origin.Z, origin.Y, GetSampleNoise(carver.Value, origin));
+                sapi.Logger.Notification("[CavesAndCaverns] Carver {0} generated {1} blocks at X:{2}, Z:{3}, Y:{4} with noise sample {5}", carver.Key, CountCarvedBlocks(carved), origin.X, origin.Z, origin.Y, noiseValue);
                 if (carver.Key == "undergroundriver")
                     riverMap = (bool[,,])carved.Clone();
 
@@ -137,29 +169,6 @@ namespace CavesAndCaverns.Carvers
                     for (int z = 0; z < chunkSize; z++)
                         if (map[x, y, z]) count++;
             return count;
-        }
-
-        private double GetSampleNoise(ICarver carver, BlockPos origin)
-        {
-            if (carver is Spaghetti2DCarver)
-                return CavesAndCavernsCore.NoiseManager.GetSpaghetti2DNoise(origin.X, origin.Y, origin.Z);
-            else if (carver is DenseCaveCarver)
-                return CavesAndCavernsCore.NoiseManager.GetDenseCaveNoise(origin.X, origin.Y, origin.Z);
-            else if (carver is CheeseCarver)
-                return CavesAndCavernsCore.NoiseManager.GetCheeseNoise(origin.X, origin.Y, origin.Z);
-            else if (carver is ThermalLakeCarver)
-                return CavesAndCavernsCore.NoiseManager.GetThermalLakeNoise(origin.X, origin.Y, origin.Z);
-            else if (carver is UndergroundRiverCarver)
-                return CavesAndCavernsCore.NoiseManager.GetUndergroundRiverNoise(origin.X, origin.Z);
-            else if (carver is LavaRiverCarver)
-                return CavesAndCavernsCore.NoiseManager.GetLavaRiverNoise(origin.X, origin.Y, origin.Z);
-            else if (carver is VeinGapCarver)
-                return CavesAndCavernsCore.NoiseManager.GetVeinGapNoise(origin.X, origin.Y, origin.Z);
-            else if (carver is PillarCarver)
-                return CavesAndCavernsCore.NoiseManager.GetPillarNoise(origin.X, origin.Y, origin.Z);
-            else if (carver is SurfaceRiverCarver)
-                return CavesAndCavernsCore.NoiseManager.GetSurfaceRiverNoise(origin.X, origin.Z);
-            return 0.0; // Default for unknown carvers
         }
     }
 
