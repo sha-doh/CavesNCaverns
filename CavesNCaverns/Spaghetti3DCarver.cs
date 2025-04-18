@@ -8,13 +8,13 @@ using Vintagestory.API.Server;
 
 namespace CavesAndCaverns.Carvers
 {
-    public class ThermalLakeCarver : ICarver
+    public class Spaghetti3DCarver : ICarver
     {
         private readonly ICoreServerAPI sapi;
         private readonly CavesConfig config;
         private readonly NoiseManager noiseManager;
 
-        public ThermalLakeCarver(ICoreServerAPI sapi)
+        public Spaghetti3DCarver(ICoreServerAPI sapi)
         {
             this.sapi = sapi;
             this.config = CavesAndCavernsCore.ConfigManager.Config;
@@ -23,10 +23,16 @@ namespace CavesAndCaverns.Carvers
 
         public void Generate(int chunkSize, BlockPos origin, string biomeTag, IBlockAccessor blockAccessor)
         {
-            int seed = (int)sapi.World.Seed;
-            float[] noiseMap1 = noiseManager.Generate3DNoise(noiseManager.GetThermalLakeNoiseGenerator(), chunkSize, origin, 1.0, 0.3333333333333333, seed + 3, "ThermalLake");
-            float[] noiseMap2 = noiseManager.Generate3DNoise(noiseManager.GetThermalLakeNoiseGenerator(), chunkSize, origin, 1.0, 0.3333333333333333, seed + 4, "ThermalLake");
-            float[] noiseMapVariation = noiseManager.Generate3DNoise(noiseManager.GetThermalLakeNoiseGenerator(), chunkSize, origin, 0.05, 0.05, seed + 5, "ThermalLake");
+            double xzScale1 = 1.0, yScale1 = 1.0;
+            double xzScale2 = 1.0, yScale2 = 1.0;
+            double xzScaleThickness = 2.0, yScaleThickness = 1.0;
+            double xzScaleRoughness = 1.0, yScaleRoughness = 1.0;
+            int seed = (int)(sapi.World.Seed + 14);
+
+            float[] noiseMap1 = noiseManager.GenerateSpaghetti3DNoise(chunkSize, origin, seed);
+            float[] noiseMap2 = noiseManager.GenerateSpaghetti3DNoise(chunkSize, origin, seed + 1);
+            float[] noiseMapThickness = noiseManager.GenerateSpaghetti3DNoise(chunkSize, origin, seed + 2);
+            float[] noiseMapRoughness = noiseManager.Generate3DNoise(noiseManager.GetSpaghetti2DRoughnessNoiseGenerator(), chunkSize, origin, xzScaleRoughness, yScaleRoughness, seed + 3, "Spaghetti2DRoughness");
 
             double[] yModifiers = PrecomputeYModifiers(chunkSize, origin);
 
@@ -34,19 +40,23 @@ namespace CavesAndCaverns.Carvers
             {
                 for (int y = 0; y < chunkSize; y++)
                 {
-                    if (origin.Y + y >= 32 || yModifiers[y] < 0.1) continue;
+                    if (yModifiers[y] < 0.1) continue;
 
                     for (int z = 0; z < chunkSize; z++)
                     {
                         int index = (y * chunkSize + z) * chunkSize + x;
                         float noiseValue1 = noiseMap1[index] + 0.47f;
                         float noiseValue2 = noiseMap2[index] + 0.27f;
-                        float variation = noiseMapVariation[index] * 0.03f;
+                        float thicknessVariation = noiseMapThickness[index] * 0.1f;
+                        float roughness = noiseMapRoughness[index];
+                        float roughnessModulator = -0.05f + (-0.05f * roughness);
+                        float roughnessBase = -0.4f + Math.Abs(roughness);
+                        float roughnessVariation = roughnessModulator * roughnessBase;
 
                         float density = Math.Min(noiseValue1 * 2.0f, noiseValue2);
                         density = GameMath.Clamp(density, -1.0f, 1.0f);
 
-                        float threshold = -0.65f - (float)(yModifiers[y] * 0.7) + variation;
+                        float threshold = -0.7f - (float)(yModifiers[y] * 0.7) + thicknessVariation + roughnessVariation;
                         if (density < threshold)
                         {
                             BlockPos pos = new BlockPos(origin.X + x, origin.Y + y, origin.Z + z);

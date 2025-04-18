@@ -26,17 +26,22 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="native\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Compile Remove="BedrockNoiseLayer.cs" />
     <Content Include="modinfo.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ILGPU" Version="1.5.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="assets\game\worldgen\" />
+    <Folder Include="lib\" />
   </ItemGroup>
 
 </Project>

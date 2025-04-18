@@ -1,0 +1,21 @@
+{
+  "code": "inverted",
+  "name": "Superflat",
+  "description": "A flat world with granite and glass bedrock",
+  "worldHeight": 256,
+  "seaLevel": 0,
+  "climate": "temperate",
+  "worldgen": {
+    "terrainGen": {
+      "type": "flat",
+      "height": 3,
+      "layers": [
+        {
+          "blockCode": "game:rock-granite",
+          "thickness": 3
+        }
+      ]
+    },
+    "disableDefaultGeneration": true
+  }
+}

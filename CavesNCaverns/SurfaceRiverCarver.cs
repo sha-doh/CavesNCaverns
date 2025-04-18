@@ -19,53 +19,51 @@ namespace CavesAndCaverns.Carvers
             this.noiseManager = CavesAndCavernsCore.NoiseManager;
         }
 
-        public bool[,,] Generate(int chunkSize, BlockPos origin, string biomeTag)
+        public void Generate(int chunkSize, BlockPos origin, string biomeTag, IBlockAccessor blockAccessor)
         {
-            bool[,,] map = new bool[chunkSize, chunkSize, chunkSize];
             int minWidth = config.SurfaceRiverWidthMin;
             int maxWidth = config.SurfaceRiverWidthMax;
             float wetMultiplier = biomeTag == "wet" ? config.WetBiomeRiverChanceMultiplier : 1.0f;
 
-            // Surface rivers should only carve around surface level (Y=100-150 globally)
             int surfaceYMin = 100;
             int surfaceYMax = 150;
             if (origin.Y < surfaceYMin || origin.Y > surfaceYMax)
             {
                 sapi.Logger.Debug("[CavesAndCaverns] Skipping surfaceriver carver at Y={0} (outside range {1}-{2})", origin.Y, surfaceYMin, surfaceYMax);
-                return map;
+                return;
             }
 
-            // Check if a river should spawn in this chunk
-            double noiseValue = noiseManager.GetSurfaceRiverNoise(origin.X, origin.Z);
-            if (noiseValue * wetMultiplier > config.SurfaceRiverProbability)
+            double spawnNoise = noiseManager.GetSurfaceRiverNoise(origin.X, origin.Z);
+            if (spawnNoise * wetMultiplier > config.SurfaceRiverProbability)
             {
-                // River parameters
-                int riverWidth = GameMath.Clamp((int)(minWidth + noiseValue * (maxWidth - minWidth)), minWidth, maxWidth); // 3-6 blocks wide
-                int riverDepth = 2; // 2 blocks deep
-                int riverY = chunkSize - 1; // Start at the top of the chunk section
+                int riverWidth = GameMath.Clamp((int)(minWidth + spawnNoise * (maxWidth - minWidth)), minWidth, maxWidth);
+                int riverDepth = 2;
+                int riverY = chunkSize - 1;
 
-                // Create a winding river path across the chunk
                 for (int x = 0; x < chunkSize; x++)
                 {
-                    // Use noise to determine the Z position of the river's center
-                    double zNoise = noiseManager.GetSurfaceRiverNoise(origin.X + x, origin.Z);
-                    int centerZ = (int)(chunkSize / 2 + zNoise * (chunkSize / 4)); // Center of the river, with some variation
+                    double carveNoise = noiseManager.GetSurfaceRiverNoise(origin.X + x, origin.Z);
+                    int centerZ = (int)(chunkSize / 2 + carveNoise * (chunkSize / 4));
                     centerZ = GameMath.Clamp(centerZ, riverWidth / 2, chunkSize - riverWidth / 2 - 1);
 
-                    // Carve a river of specified width and depth
-                    for (int z = centerZ - riverWidth / 2; z <= centerZ + riverWidth / 2; z++)
+                    if (carveNoise > 0.6)
                     {
-                        for (int y = riverY; y >= riverY - riverDepth && y >= 0; y--)
+                        for (int z = centerZ - riverWidth / 2; z <= centerZ + riverWidth / 2; z++)
                         {
-                            map[x, y, z] = true;
+                            for (int y = riverY; y >= riverY - riverDepth && y >= 0; y--)
+                            {
+                                BlockPos pos = new BlockPos(origin.X + x, origin.Y + y, origin.Z + z);
+                                if (config.DebugGlassSurfaceRivers)
+                                    GlassBlockManager.PlaceDebugGlass(blockAccessor, pos, "surfaceriver");
+                                else
+                                    blockAccessor.SetBlock(0, pos);
+                            }
                         }
                     }
                 }
 
                 sapi.Logger.Notification("[CavesAndCaverns] Carver surfaceriver generated river at X:{0}, Z:{1}, Y:{2} with width {3}", origin.X, origin.Z, origin.Y, riverWidth);
             }
-
-            return map;
         }
     }
 }

@@ -102,6 +102,7 @@ namespace CakeBuild
             if (context.DirectoryExists($"../{BuildContext.ProjectName}/assets"))
             {
                 context.CopyDirectory($"../{BuildContext.ProjectName}/assets", $"../Releases/{context.Name}/assets");
+                context.CopyDirectory($"../{BuildContext.ProjectName}/native", $"../Releases/{context.Name}/native");
             }
             context.CopyFile($"../{BuildContext.ProjectName}/modinfo.json", $"../Releases/{context.Name}/modinfo.json");
             if (context.FileExists($"../{BuildContext.ProjectName}/modicon.png"))

@@ -25,7 +25,7 @@ namespace CavesAndCaverns.Managers
             glassIds["surfaceriver"] = sapi.World.GetBlock(new AssetLocation("game:glass-blue"))?.BlockId ?? 0;
             glassIds["undergroundriver"] = sapi.World.GetBlock(new AssetLocation("game:glass-yellow"))?.BlockId ?? 0;
             glassIds["lavariver"] = sapi.World.GetBlock(new AssetLocation("game:glass-red"))?.BlockId ?? 0;
-            glassIds["bedrock"] = sapi.World.GetBlock(new AssetLocation("game:glass-smoky"))?.BlockId ?? 0;
+            glassIds["mantle"] = sapi.World.GetBlock(new AssetLocation("game:glass-smoky"))?.BlockId ?? 0;
 
             // Log the results of block loading and apply fallback if needed
             foreach (var pair in glassIds)

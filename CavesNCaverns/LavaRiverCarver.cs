@@ -1,5 +1,7 @@
-﻿using CavesAndCaverns.Config;
+﻿using CavesAndCaverns;
+using CavesAndCaverns.Config;
 using CavesAndCaverns.Managers;
+using System;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Server;
@@ -19,18 +21,59 @@ namespace CavesAndCaverns.Carvers
             this.noiseManager = CavesAndCavernsCore.NoiseManager;
         }
 
-        public bool[,,] Generate(int chunkSize, BlockPos origin, string biomeTag)
+        public void Generate(int chunkSize, BlockPos origin, string biomeTag, IBlockAccessor blockAccessor)
         {
-            bool[,,] map = new bool[chunkSize, chunkSize, chunkSize];
+            int seed = (int)sapi.World.Seed;
+            float[] noiseMap1 = noiseManager.Generate3DNoise(noiseManager.GetLavaRiverNoiseGenerator(), chunkSize, origin, 1.0, 1.0, seed + 3, "LavaRiver");
+            float[] noiseMap2 = noiseManager.Generate3DNoise(noiseManager.GetLavaRiverNoiseGenerator(), chunkSize, origin, 1.0, 1.0, seed + 4, "LavaRiver");
+            float[] noiseMapThickness = noiseManager.Generate3DNoise(noiseManager.GetLavaRiverNoiseGenerator(), chunkSize, origin, 2.0, 1.0, seed + 5, "LavaRiver");
+            float[] noiseMapRoughness = noiseManager.Generate3DNoise(noiseManager.GetLavaRiverNoiseGenerator(), chunkSize, origin, 1.0, 1.0, seed + 6, "LavaRiver");
+
+            double[] yModifiers = PrecomputeYModifiers(chunkSize, origin);
+
             for (int x = 0; x < chunkSize; x++)
+            {
                 for (int y = 0; y < chunkSize; y++)
+                {
+                    if (origin.Y + y >= 16 || yModifiers[y] < 0.1) continue;
+
                     for (int z = 0; z < chunkSize; z++)
                     {
-                        double noiseValue = noiseManager.GetLavaRiverNoise(origin.X + x, origin.Y + y, origin.Z + z);
-                        if (noiseValue > 0.1) // Lowered from 0.5 to 0.1
-                            map[x, y, z] = true;
+                        int index = (y * chunkSize + z) * chunkSize + x;
+                        float noiseValue1 = noiseMap1[index] + 0.47f;
+                        float noiseValue2 = noiseMap2[index] + 0.27f;
+                        float thicknessVariation = noiseMapThickness[index] * 0.1f;
+                        float roughness = noiseMapRoughness[index];
+                        float roughnessModulator = -0.05f + (-0.05f * roughness);
+                        float roughnessBase = -0.4f + Math.Abs(roughness);
+                        float roughnessVariation = roughnessModulator * roughnessBase;
+
+                        float density = Math.Min(noiseValue1 * 2.0f, noiseValue2);
+                        density = GameMath.Clamp(density, -1.0f, 1.0f);
+
+                        float threshold = -0.7f - (float)(yModifiers[y] * 0.7) + thicknessVariation + roughnessVariation;
+                        if (density < threshold)
+                        {
+                            BlockPos pos = new BlockPos(origin.X + x, origin.Y + y, origin.Z + z);
+                            if (config.DebugGlassLavaRivers)
+                                GlassBlockManager.PlaceDebugGlass(blockAccessor, pos, "lavariver");
+                            else
+                                blockAccessor.SetBlock(0, pos);
+                        }
                     }
-            return map;
+                }
+            }
+        }
+
+        private double[] PrecomputeYModifiers(int chunkSize, BlockPos origin)
+        {
+            double[] yModifiers = new double[chunkSize];
+            for (int y = 0; y < chunkSize; y++)
+            {
+                double worldY = origin.Y + y;
+                yModifiers[y] = 1.0 - (worldY / sapi.WorldManager.MapSizeY);
+            }
+            return yModifiers;
         }
     }
 }

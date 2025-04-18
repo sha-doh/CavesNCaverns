@@ -9,16 +9,16 @@ namespace CavesAndCaverns.Config
     public class ConfigManager
     {
         private readonly ICoreAPI api;
-        private static CavesConfig config; // Static to ensure single instance
+        private static CavesConfig config;
 
         public ConfigManager(ICoreAPI api)
         {
             this.api = api;
             if (api.Side != EnumAppSide.Server)
             {
-                if (config == null) config = new CavesConfig(); // Default for client
+                if (config == null) config = new CavesConfig();
             }
-            else if (config == null) // Only load once on server
+            else if (config == null)
             {
                 Load();
             }
@@ -33,7 +33,7 @@ namespace CavesAndCaverns.Config
                 {
                     config = value;
                     Save();
-                    api.Logger.Notification("[CavesAndCaverns] Config updated: DebugInverseWorld={0}", config.DebugInverseWorld);
+                    api.Logger.Notification("[CavesAndCaverns] Config updated: DebugInverseWorld={0}, VerboseLogging={1}", config.DebugInverseWorld, config.VerboseLogging);
                 }
                 else
                 {
@@ -72,8 +72,24 @@ namespace CavesAndCaverns.Config
                     }
                     else
                     {
-                        api.Logger.Notification("[CavesAndCaverns] Config loaded successfully: DebugInverseWorld={0}, SurfaceRiverProbability={1}",
-                            config.DebugInverseWorld, config.SurfaceRiverProbability);
+                        // Ensure all fields are populated (handle old configs)
+                        var defaultConfig = GetDefaultConfig();
+                        if (config.EnableCaveEntrances == false && config.CaveEntranceProbability == 0f) // Likely uninitialized
+                        {
+                            config.EnableCaveEntrances = defaultConfig.EnableCaveEntrances;
+                            config.CaveEntranceProbability = defaultConfig.CaveEntranceProbability;
+                            Save(); // Update the file with new fields
+                            api.Logger.Notification("[CavesAndCaverns] Updated config with missing cave entrance fields.");
+                        }
+                        // Add VerboseLogging if missing (for older configs)
+                        if (config.VerboseLogging == null)
+                        {
+                            config.VerboseLogging = defaultConfig.VerboseLogging;
+                            Save();
+                            api.Logger.Notification("[CavesAndCaverns] Updated config with missing VerboseLogging field.");
+                        }
+                        api.Logger.Notification("[CavesAndCaverns] Config loaded successfully: DebugInverseWorld={0}, SurfaceRiverProbability={1}, VerboseLogging={2}",
+                            config.DebugInverseWorld, config.SurfaceRiverProbability, config.VerboseLogging);
                     }
                 }
                 else
@@ -102,8 +118,8 @@ namespace CavesAndCaverns.Config
 
                 string jsonContent = JsonConvert.SerializeObject(config, Formatting.Indented);
                 File.WriteAllText(configPath, jsonContent);
-                api.Logger.Notification("[CavesAndCaverns] Config saved successfully: DebugInverseWorld={0}, DebugGlassCaves={1}",
-                    config.DebugInverseWorld, config.DebugGlassCaves);
+                api.Logger.Notification("[CavesAndCaverns] Config saved successfully: DebugInverseWorld={0}, DebugGlassCaves={1}, VerboseLogging={2}",
+                    config.DebugInverseWorld, config.DebugGlassCaves, config.VerboseLogging);
             }
             catch (Exception ex)
             {
@@ -119,6 +135,7 @@ namespace CavesAndCaverns.Config
                 DebugGlassCaves = true,
                 EnableSurfaceRivers = true,
                 EnableSpaghetti2D = true,
+                EnableSpaghetti3D = true,
                 EnableCanyons = true,
                 EnableDenseCaves = true,
                 EnableCheeseCaves = true,
@@ -127,8 +144,10 @@ namespace CavesAndCaverns.Config
                 EnableLavaRivers = true,
                 EnableVeinGaps = true,
                 EnablePillars = true,
+                EnableCaveEntrances = true,
                 SurfaceRiverProbability = 0.1f,
                 SpaghettiProbability = 0.05f,
+                Spaghetti3DProbability = 0.4f,
                 CanyonProbability = 0.03f,
                 DenseCaveProbability = 0.07f,
                 CheeseProbability = 0.02f,
@@ -137,11 +156,12 @@ namespace CavesAndCaverns.Config
                 LavaRiverProbability = 0.01f,
                 VeinGapProbability = 0.05f,
                 PillarProbability = 0.03f,
+                CaveEntranceProbability = 0.7f,
                 DebugGlassSurfaceRivers = true,
                 DebugGlassUndergroundRivers = true,
                 DebugGlassLavaRivers = true,
-                DebugGlassBedrock = true,
-                EnableBedrockLayer = true,
+                DebugGlassMantle = true,
+                EnableMantleLayer = true,
                 WetBiomeRiverChanceMultiplier = 1.5f,
                 RiverWidthMin = 2,
                 RiverWidthMax = 5,
@@ -150,10 +170,11 @@ namespace CavesAndCaverns.Config
                 GlowWormCountMin = 1,
                 GlowWormCountMax = 5,
                 GlowWormLightLevel = 7,
-                BedrockMinThickness = 1,
-                BedrockMaxThickness = 3,
+                MantleMinThickness = 1,
+                MantleMaxThickness = 3,
                 Seed = 0,
-                UseInvertedWorld = false // Added default value
+                UseInvertedWorld = false,
+                VerboseLogging = false // Default to false, enable manually for debugging
             };
         }
     }
@@ -162,6 +183,7 @@ namespace CavesAndCaverns.Config
     {
         public bool EnableSurfaceRivers { get; set; } = true;
         public bool EnableSpaghetti2D { get; set; } = true;
+        public bool EnableSpaghetti3D { get; set; } = true;
         public bool EnableCanyons { get; set; } = true;
         public bool EnableDenseCaves { get; set; } = true;
         public bool EnableCheeseCaves { get; set; } = true;
@@ -170,9 +192,11 @@ namespace CavesAndCaverns.Config
         public bool EnableLavaRivers { get; set; } = true;
         public bool EnableVeinGaps { get; set; } = true;
         public bool EnablePillars { get; set; } = true;
+        public bool EnableCaveEntrances { get; set; } = true;
 
         public float SurfaceRiverProbability { get; set; } = 0.1f;
         public float SpaghettiProbability { get; set; } = 0.05f;
+        public float Spaghetti3DProbability { get; set; } = 0.4f;
         public float CanyonProbability { get; set; } = 0.03f;
         public float DenseCaveProbability { get; set; } = 0.07f;
         public float CheeseProbability { get; set; } = 0.02f;
@@ -181,14 +205,15 @@ namespace CavesAndCaverns.Config
         public float LavaRiverProbability { get; set; } = 0.01f;
         public float VeinGapProbability { get; set; } = 0.05f;
         public float PillarProbability { get; set; } = 0.03f;
+        public float CaveEntranceProbability { get; set; } = 0.7f;
 
         public bool DebugGlassCaves { get; set; } = false;
         public bool DebugInverseWorld { get; set; } = false;
         public bool DebugGlassSurfaceRivers { get; set; } = false;
         public bool DebugGlassUndergroundRivers { get; set; } = false;
         public bool DebugGlassLavaRivers { get; set; } = false;
-        public bool DebugGlassBedrock { get; set; } = false;
-        public bool EnableBedrockLayer { get; set; } = true;
+        public bool DebugGlassMantle { get; set; } = false;
+        public bool EnableMantleLayer { get; set; } = true;
         public float WetBiomeRiverChanceMultiplier { get; set; } = 1.5f;
         public int RiverWidthMin { get; set; } = 2;
         public int RiverWidthMax { get; set; } = 5;
@@ -197,11 +222,10 @@ namespace CavesAndCaverns.Config
         public int GlowWormCountMin { get; set; } = 1;
         public int GlowWormCountMax { get; set; } = 5;
         public int GlowWormLightLevel { get; set; } = 7;
-        public int BedrockMinThickness { get; set; } = 1;
-        public int BedrockMaxThickness { get; set; } = 3;
+        public int MantleMinThickness { get; set; } = 1;
+        public int MantleMaxThickness { get; set; } = 3;
         public int Seed { get; set; } = 0;
-
-        // Added UseInvertedWorld property
         public bool UseInvertedWorld { get; set; } = false;
+        public bool? VerboseLogging { get; set; } = false; // Nullable to detect missing field in old configs
     }
 }
